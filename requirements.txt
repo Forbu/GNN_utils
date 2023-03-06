@@ -1,0 +1,4 @@
+pytorch-lightning
+pytest
+pyg_lib torch_scatter torch_sparse -f https://data.pyg.org/whl/torch-1.13.0+cu116.html
+torch-geometric
