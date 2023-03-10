@@ -1,10 +1,8 @@
 import pytest
 import torch
-
 from torch_geometric.data import Data
 
 from pytorch_lightning.utilities.model_summary import ModelSummary
-
 from torch_geo.models_mpgnn import MPGNNConv, MPGNN
 
 
@@ -57,11 +55,13 @@ def test_mpgnnconv():
 
 
 def test_mpgnn_full():
-    model = MPGNN(hidden_size=128,
+    model = MPGNN(
+        hidden_size=128,
         n_mp_layers=10,  # number of GNN layers
         node_feature_dim=128,
         edge_feature_dim=128,
-        dim=2)  # dimension of the world, typically 2D or 3D)
+        dim=2,
+    )  # dimension of the world, typically 2D or 3D)
 
     nb_nodes = 10000
     nb_edge = nb_nodes * 4
@@ -95,7 +95,9 @@ def test_mpgnn_full():
         for _ in range(100):
             # now we can perform the forward pass
             output = model(
-                edge_index=edge_index_grid, node_feature=nodes, edge_feature=edge_attr_grid
+                edge_index=edge_index_grid,
+                node_feature=nodes,
+                edge_feature=edge_attr_grid,
             )
 
     time = time.time() - current_time
