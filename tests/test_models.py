@@ -7,7 +7,7 @@ import pytest
 import torch
 from pytorch_lightning.utilities.model_summary import ModelSummary
 
-from torch_geo.models import RayTracingModelGAT
+from gnn_utils.models import RayTracingModelGAT
 
 # pytest to initialize the test with a model
 @pytest.fixture(scope="module", autouse=True, name="model")
@@ -43,7 +43,7 @@ def initialize_input():
     edge_index_grid = torch.randint(0, nb_nodes, (2, nb_edge), dtype=torch.long)
 
     # we also need to create the edge attributes for the grid graph with 2 attributes per edge
-    edge_attr_grid = torch.rand((nb_edge, 128), dtype=torch.float)
+    edge_attr_grid = torch.rand((nb_edge, 2), dtype=torch.float)
 
     # we do the same for the ray graph
     edge_index_ray = torch.randint(0, nb_nodes, (2, nb_edge), dtype=torch.long)
@@ -52,7 +52,7 @@ def initialize_input():
     edge_attr_ray = torch.rand((nb_edge, 1), dtype=torch.float)
 
     # we also need to create the input features
-    nodes = torch.rand((nb_nodes, 128), dtype=torch.float)
+    nodes = torch.rand((nb_nodes, 5), dtype=torch.float)
 
     return (
         edge_index_grid,
@@ -64,7 +64,6 @@ def initialize_input():
     )
 
 
-@pytest.fixture(scope="module", autouse=True)
 def test_simple_model(model, inputs_model):
     """
     Simple test to check if the model is working
@@ -131,17 +130,21 @@ def test_speed_model(model, inputs_model):
         nb_nodes,
     ) = inputs_model
 
-    # convert to cuda
-    (
-        edge_index_grid,
-        edge_attr_grid,
-        edge_index_ray,
-        edge_attr_ray,
-        nodes,
-        nb_nodes,
-    ) = convert_to_cuda(
-        edge_index_grid, edge_attr_grid, edge_index_ray, edge_attr_ray, nodes, nb_nodes
-    )
+    # check if we have a gpu
+    if torch.cuda.is_available():
+        print("gpu available, going to test the speed on the gpu")
+
+        # convert to cuda
+        (
+            edge_index_grid,
+            edge_attr_grid,
+            edge_index_ray,
+            edge_attr_ray,
+            nodes,
+            nb_nodes,
+        ) = convert_to_cuda(
+            edge_index_grid, edge_attr_grid, edge_index_ray, edge_attr_ray, nodes, nb_nodes
+        )
 
     current_time = time.time()
 

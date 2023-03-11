@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from pytorch_lightning.utilities.model_summary import ModelSummary
-from torch_geo.models_mpgnn import MPGNNConv, MPGNN
+from gnn_utils.models_mpgnn import MPGNNConv, MPGNN
 
 # fixture to initialize the test with a layer
 @pytest.fixture(scope="module", autouse=True, name="layer")

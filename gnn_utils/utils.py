@@ -63,6 +63,7 @@ def get_blocks_encoding_decoding(
     input_dim_edges,
     hidden_dim,
     output_dim,
+    hidden_dim_edge=None,
 ):
     """
     Returns the encoding and decoding blocks for a GNN
@@ -77,7 +78,7 @@ def get_blocks_encoding_decoding(
         graph_encoders.append(
             MLP(
                 in_dim=input_dim_edges[i],
-                out_dim=hidden_dim,
+                out_dim=hidden_dim_edge,
                 hidden_dim=hidden_dim,
                 hidden_layers=2,
             )
@@ -101,7 +102,7 @@ def get_blocks_encoding_decoding(
     return graph_encoders, node_encoder, node_decoder
 
 
-def get_blocks_message_passing(nb_graph, hidden_dim, nb_head, nb_iterations):
+def get_blocks_message_passing(nb_graph, hidden_dim, nb_head=2, nb_iterations=10):
     """
     Returns the message passing blocks for a GNN
 
@@ -127,10 +128,10 @@ def get_blocks_message_passing(nb_graph, hidden_dim, nb_head, nb_iterations):
             message_passing.append(
                 GATv2Conv(
                     hidden_dim,
-                    hidden_dim // 2,
+                    hidden_dim // nb_head,
                     heads=nb_head,
                     concat=True,
-                    edge_dim=hidden_dim // 2,
+                    edge_dim=hidden_dim // nb_head,
                 )
             )
         graphs_message_passing.append(message_passing)
@@ -140,7 +141,7 @@ def get_blocks_message_passing(nb_graph, hidden_dim, nb_head, nb_iterations):
     # now we can create the nodes preprocessing
     for _ in range(nb_iterations):
         nodes_message_passing.append(
-            MLP(in_dim=hidden_dim * nb_head, out_dim=hidden_dim)
+            MLP(in_dim=hidden_dim * nb_graph, out_dim=hidden_dim)
         )
 
     return graphs_message_passing, nodes_message_passing

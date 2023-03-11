@@ -43,11 +43,12 @@ class RayTracingModelGAT(pl.LightningModule):
             input_dim_edges=[graph_grid_atrr_dim, graph_ray_atrr_dim],
             hidden_dim=hidden_dim,
             output_dim=output_dim,
+            hidden_dim_edge=hidden_dim // nb_head,
         )
 
         # here we first create the encoder MLP for the grid graph and the ray graph
         self.encoder_grid = graph_encoders[0]
-        self.encoder_ray = graph_encoders[0]
+        self.encoder_ray = graph_encoders[1]
 
         graphs_message_passing, nodes_message_passing = get_blocks_message_passing(
             nb_graph=2,
@@ -88,6 +89,7 @@ class RayTracingModelGAT(pl.LightningModule):
 
         # then we perform the message passing
         for i in range(self.nb_iterations):
+            
             x_grid = self.message_passing_grid[i](
                 node_features, grid_graph_edge_index, x_ray_attr
             )

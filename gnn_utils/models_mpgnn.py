@@ -58,6 +58,8 @@ class MPGNNConv(MessagePassing):
         """
         edge_info = torch.cat((x_i, x_j, edge_attr), dim=-1)
 
+        print("edge_info", edge_info.shape)
+
         edge_info = self.lin_edge(edge_info)
         return edge_info
 
