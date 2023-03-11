@@ -9,61 +9,12 @@ This script will implement a GNN model that will take 4 graphs as input:
 """
 # main torch imports
 import torch
-import torch.nn.functional as F
-from torch.nn import Linear
-import torch.nn as nn
+from torch import nn
 
 import pytorch_lightning as pl
 
-# torch geometric imports
-import torch_geometric.transforms as T
-
-from torch_geometric.nn.conv.nn_conv import NNConv
-from torch_geometric.nn.conv.gatv2_conv import GATv2Conv
-
-
-class MLP(nn.Module):
-    # MLP with LayerNorm
-    def __init__(
-        self,
-        in_dim,
-        out_dim=128,
-        hidden_dim=128,
-        hidden_layers=2,
-        norm_type="LayerNorm",
-    ):
-        """
-        MLP
-        in_dim: input dimension
-        out_dim: output dimension
-        hidden_dim: number of nodes in a hidden layer; future work: accept integer array
-        hidden_layers: number of hidden layers
-        normalize_output: if True, normalize output
-        norm_type: normalization type; one of 'LayerNorm', 'GraphNorm', 'InstanceNorm', 'BatchNorm', 'MessageNorm', or None
-        """
-
-        super(MLP, self).__init__()
-
-        layers = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
-        for _ in range(hidden_layers - 1):
-            layers += [nn.Linear(hidden_dim, hidden_dim), nn.ReLU()]
-        layers.append(nn.Linear(hidden_dim, out_dim))
-
-        if norm_type is not None:
-            assert norm_type in [
-                "LayerNorm",
-                "GraphNorm",
-                "InstanceNorm",
-                "BatchNorm",
-                "MessageNorm",
-            ]
-            norm_layer = getattr(nn, norm_type)
-            layers.append(norm_layer(out_dim))
-
-        self.model = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.model(x)
+from torch_geometric.nn import GATv2Conv
+from gnn_utils.utils import MLP
 
 
 class RayTracingMultiScaleModelGAT(pl.LightningModule):
@@ -104,7 +55,8 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
         # then we have a final decoder MLP
         self.decoder = MLP(in_dim=hidden_dim, out_dim=output_dim)
 
-        # then we create nb_iterations NNConv layers for the message passing for the grid graph and the ray graph
+        # then we create nb_iterations NNConv layers for 
+        # the message passing for the grid graph and the ray graph
         self.message_passing_grid = nn.ModuleList()
         self.message_passing_ray = nn.ModuleList()
         self.message_passing_grid_multiscale = nn.ModuleList()
@@ -153,7 +105,7 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
         grid_graph_edge_attr,
         ray_graph_edge_index,
         ray_graph_edge_attr,
-        x,
+        node_features,
         multiscale_grid_graph_edge_index,
         multiscale_grid_graph_edge_attr,
         nb_multiscale_node,
@@ -183,24 +135,24 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
         x_ray_attr = self.encoder_ray(ray_graph_edge_attr)
 
         # then we encode the input features
-        x = self.node_encoder(x)
+        node_features = self.node_encoder(node_features)
 
         # we initialize the multiscale node
         node_multiscale = self.multiscale_node.repeat(nb_multiscale_node, 1)
 
         # then we perform the message passing
         for i in range(self.nb_iterations):
-            x_grid = self.message_passing_grid[i](x, grid_graph_edge_index, x_ray_attr)
-            x_ray = self.message_passing_ray[i](x, ray_graph_edge_index, x_grid_attr)
+            x_grid = self.message_passing_grid[i](node_features, grid_graph_edge_index, x_ray_attr)
+            x_ray = self.message_passing_ray[i](node_features, ray_graph_edge_index, x_grid_attr)
 
-            init = x
+            init = node_features
 
             # we also apply a node preprocessing MLP
-            x = self.node_preprocessing[i](torch.cat([x_grid, x_ray], dim=1))
+            node_features= self.node_preprocessing[i](torch.cat([x_grid, x_ray], dim=1))
 
             # preprocess the multiscale node to get information from the grid graph
             # step 1. concatenate the multiscale node with the grid node
-            x_multiscale = torch.cat([x, node_multiscale], dim=0)
+            x_multiscale = torch.cat([node_features, node_multiscale], dim=0)
             x_multiscale = self.message_passing_grid_multiscale[i](
                 x_multiscale,
                 multiscale_grid_graph_edge_index,
@@ -210,9 +162,9 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
             node_multiscale = x_multiscale[-nb_multiscale_node:]
             x_multiscale_real = x_multiscale[:-nb_multiscale_node]
 
-            x = x + init + x_multiscale_real
+            node_features = node_features + init + x_multiscale_real
 
         # finally we decode the output
-        x = self.decoder(x)
+        node_features = self.decoder(node_features)
 
-        return x
+        return node_features

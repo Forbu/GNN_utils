@@ -1,23 +1,22 @@
 """
 Test module for the models (the GAT model and the RayTracing model)
 """
-import pytest
 import time
+import pytest
 
 import torch
-from torch_geometric.data import Data
 from pytorch_lightning.utilities.model_summary import ModelSummary
 
-from torch_geo.models import RayTracingModel, RayTracingModelGAT
+from torch_geo.models import RayTracingModelGAT
 
 # pytest to initialize the test with a model
-@pytest.fixture(scope="module", autouse=True)
-def model():
+@pytest.fixture(scope="module", autouse=True, name="model")
+def define_model():
     """
     Returns:
        nn.Module: RayTracingModel
     """
-    model = RayTracingModel(
+    model_gnn = RayTracingModelGAT(
         nb_iterations=10,
         input_dim=5,
         output_dim=5,
@@ -26,13 +25,13 @@ def model():
         graph_ray_atrr_dim=1,
     )
 
-    model.eval()
+    model_gnn.eval()
 
-    return model
+    return model_gnn
 
 
 # another pytest to initialize the test input
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module", autouse=True, name="inputs_model")
 def initialize_input():
     """
     Fixture to initialize the input for the model
@@ -66,7 +65,7 @@ def initialize_input():
 
 
 @pytest.fixture(scope="module", autouse=True)
-def test_simple_model(model, initialize_input):
+def test_simple_model(model, inputs_model):
     """
     Simple test to check if the model is working
     """
@@ -77,7 +76,7 @@ def test_simple_model(model, initialize_input):
         edge_attr_ray,
         nodes,
         nb_nodes,
-    ) = initialize_input
+    ) = inputs_model
 
     with torch.inference_mode():
 
@@ -118,7 +117,7 @@ def convert_to_cuda(
     )
 
 
-def test_speed_model(model, initialize_input):
+def test_speed_model(model, inputs_model):
     """
     test to check the speed of the model on a full graph
     """
@@ -130,7 +129,7 @@ def test_speed_model(model, initialize_input):
         edge_attr_ray,
         nodes,
         nb_nodes,
-    ) = initialize_input
+    ) = inputs_model
 
     # convert to cuda
     (
@@ -149,12 +148,11 @@ def test_speed_model(model, initialize_input):
     with torch.inference_mode():
         for _ in range(100):
             # now we can perform the forward pass
-            output = model(
+            _ = model(
                 edge_index_grid, edge_attr_grid, edge_index_ray, edge_attr_ray, nodes
             )
 
-    time = time.time() - current_time
+    delta_time = time.time() - current_time
 
-    print("time for 1 forward pass: ", time / 100)
+    print("time for 1 forward pass: ", delta_time / 100)
     print(ModelSummary(model, max_depth=3))
-
