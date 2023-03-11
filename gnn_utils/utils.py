@@ -30,7 +30,7 @@ class MLP(nn.Module):
         norm_type: normalization type; one of 'LayerNorm', 'GraphNorm', ...
         """
 
-        super(MLP, self).__init__()
+        super().__init__()
 
         layers = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
         for _ in range(hidden_layers - 1):

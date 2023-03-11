@@ -80,9 +80,10 @@ class MPGNN(pl.LightningModule):
         graph_encoders, self.node_in, self.node_out = get_blocks_encoding_decoding(
             nb_graphs=1,
             input_dim_node=node_feature_dim,
-            input_dim_edges=edge_feature_dim,
+            input_dim_edges=[edge_feature_dim],
             hidden_dim=hidden_size,
             output_dim=dim,
+            hidden_dim_edge=hidden_size,
         )
 
         self.edge_in = graph_encoders[0]

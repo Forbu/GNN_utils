@@ -55,7 +55,7 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
         # then we have a final decoder MLP
         self.decoder = MLP(in_dim=hidden_dim, out_dim=output_dim)
 
-        # then we create nb_iterations NNConv layers for 
+        # then we create nb_iterations NNConv layers for
         # the message passing for the grid graph and the ray graph
         self.message_passing_grid = nn.ModuleList()
         self.message_passing_ray = nn.ModuleList()
@@ -118,13 +118,21 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
         The multi-scale model is used to encode the multiscale grid graph.
 
         Args:
-            grid_graph_edge_index (torch.Tensor): (2, E) tensor, where E is the number of edges in the grid graph
-            grid_graph_edge_attr (torch.Tensor): (E, F) tensor, where F is the number of features for each edge in the grid graph
-            ray_graph_edge_index (torch.Tensor): (2, E) tensor, where E is the number of edges in the ray graph
-            ray_graph_edge_attr (torch.Tensor): (E, F) tensor, where F is the number of features for each edge in the ray graph
-            x (torch.Tensor): (N, F') tensor, where N is the number of nodes in the input graph, and F is the number of input features per node.
-            multiscale_grid_graph_edge_index (torch.Tensor): (2, E) tensor, where E is the number of edges in the multiscale grid graph
-            multiscale_grid_graph_edge_attr (torch.Tensor): (E, F) tensor, where F is the number of features for each edge in the multiscale grid graph
+            grid_graph_edge_index (torch.Tensor): (2, E) tensor,
+                            where E is the number of edges in the grid graph
+            grid_graph_edge_attr (torch.Tensor): (E, F) tensor,
+                            where F is the number of features for each edge in the grid graph
+            ray_graph_edge_index (torch.Tensor): (2, E) tensor,
+                            where E is the number of edges in the ray graph
+            ray_graph_edge_attr (torch.Tensor): (E, F) tensor,
+                            where F is the number of features for each edge in the ray graph
+            x (torch.Tensor): (N, F') tensor,
+                            where N is the number of nodes in the input graph,
+                            and F is the number of input features per node.
+            multiscale_grid_graph_edge_index (torch.Tensor): (2, E) tensor,
+                            where E is the number of edges in the multiscale grid graph
+            multiscale_grid_graph_edge_attr (torch.Tensor): (E, F) tensor,
+                            where F is the number of features for each edge in the multiscale grid graph
             nb_multiscale_node (int): number of nodes in the multiscale grid graph
 
         Returns:
@@ -142,13 +150,19 @@ class RayTracingMultiScaleModelGAT(pl.LightningModule):
 
         # then we perform the message passing
         for i in range(self.nb_iterations):
-            x_grid = self.message_passing_grid[i](node_features, grid_graph_edge_index, x_ray_attr)
-            x_ray = self.message_passing_ray[i](node_features, ray_graph_edge_index, x_grid_attr)
+            x_grid = self.message_passing_grid[i](
+                node_features, grid_graph_edge_index, x_ray_attr
+            )
+            x_ray = self.message_passing_ray[i](
+                node_features, ray_graph_edge_index, x_grid_attr
+            )
 
             init = node_features
 
             # we also apply a node preprocessing MLP
-            node_features= self.node_preprocessing[i](torch.cat([x_grid, x_ray], dim=1))
+            node_features = self.node_preprocessing[i](
+                torch.cat([x_grid, x_ray], dim=1)
+            )
 
             # preprocess the multiscale node to get information from the grid graph
             # step 1. concatenate the multiscale node with the grid node

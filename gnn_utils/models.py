@@ -12,6 +12,7 @@ from gnn_utils.utils import (
     get_blocks_message_passing,
 )
 
+
 class RayTracingModelGAT(pl.LightningModule):
     """
     GNN model :
@@ -89,7 +90,7 @@ class RayTracingModelGAT(pl.LightningModule):
 
         # then we perform the message passing
         for i in range(self.nb_iterations):
-            
+
             x_grid = self.message_passing_grid[i](
                 node_features, grid_graph_edge_index, x_ray_attr
             )
